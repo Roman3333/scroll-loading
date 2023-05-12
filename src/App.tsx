@@ -1,22 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useInView } from 'react-intersection-observer';
+import FetchTodos, { ITodo } from './fetchTodos';
 
 function App() {
+  const [data, setData] = useState<ITodo[]>([]);
+  const [page, setPage] = useState<number>(1);
+  const {
+    data: resData,
+    loading,
+    totalCount,
+  } = FetchTodos('https://jsonplaceholder.typicode.com/todos', page);
+  const { ref, inView } = useInView({
+    threshold: 0.5,
+  });
+
+  const isFetching = useMemo<boolean>(() => +totalCount > data.length, [totalCount, data]);
+
+  useEffect(() => {
+    if (data && inView) setPage((prev) => (prev += 1));
+  }, [inView]);
+
+  useEffect(() => {
+    if (resData && isFetching) setData((prev) => [...prev, ...resData]);
+  }, [resData]);
+
   return (
-    <main className="min-h-screen bg">
-      <div className="mb-1 text-purple font-black bg-tahiti">Апаыпы</div>
-      <h1 className="text-">Hello</h1>
-      <div className="m-10">
-        <span className="mx-10"></span>
-        <span className="3x"></span>
-      </div>
-      <ul className="flex  flex-wrap list-none [&>*:nth-child(4)]:mr-0 [&>*:nth-child(2)]:text-blue-50 ">
-        <li className="w-52 bg-metal mr-3">Work</li>
-        <li className="w-52 bg-metal mr-3">Work</li>
-        <li className="w-52 bg-metal mr-3">Work</li>
-        <li className="w-52 bg-metal mr-3">Work</li>
-        <li className="w-52 bg-metal mr-3">Work</li>
-        <li className="w-52 bg-metal mr-3">Work</li>
-      </ul>
+    <main className="bg-slate-900">
+      <section className="min-h-screen w-[600px] mx-auto flex flex-col">
+        {data &&
+          data.map(({ id, title }) => {
+            return (
+              <div className="w-[400px] border text-[#e2e8f0] text-[18px] mb-2" key={id}>
+                <strong>({id})</strong> - {title}
+              </div>
+            );
+          })}
+        {loading && isFetching && <h4 className="text-red-500 text-center">Loading...</h4>}
+        {!loading && isFetching && (
+          <div ref={ref} className="h-[40px] bg-red-950">
+            Test
+          </div>
+        )}
+      </section>
     </main>
   );
 }
